@@ -54,24 +54,20 @@ async function uploadImage(req, res, next) {
 async function createBlog(req, res, next) {
   console.log('Received createBlog request with body:', req.body);
   try {
-    const { title, author, datePosted, readTime, subheading, paragraph, tags, sections, imageUrl } = req.body;
+    const { title, author, datePosted, readTime, subheading, paragraph } = req.body;
+    const tags = req.body.tags ? JSON.parse(req.body.tags) : [];
+    const sections = req.body.sections ? JSON.parse(req.body.sections) : [];
 
-    // Validate required fields
     if (!title || !author || !datePosted || !readTime || !subheading || !paragraph) {
       return res.status(400).json({ error: 'title, author, datePosted, readTime, subheading, paragraph are required' });
     }
 
-    // Normalize arrays
     const normalizedTags = Array.isArray(tags) ? tags.filter(t => t && t.trim()) : [];
-    const normalizedSections = Array.isArray(sections) ? sections.map(s => ({
-      heading: s.heading || '',
-      paragraph: s.paragraph || ''
-    })) : [];
+    const normalizedSections = normalizeSections(sections);
 
-    // Image URL: use uploaded file or URL from request
-    let finalImageUrl = imageUrl || '';
+    let imageUrl = '';
     if (req.file) {
-      finalImageUrl = await uploadToCloudinary(req.file.buffer); // your Cloudinary upload function
+      imageUrl = await uploadToCloudinary(req.file.buffer);
     }
 
     const payload = {
@@ -83,14 +79,13 @@ async function createBlog(req, res, next) {
       subheading,
       paragraph,
       sections: normalizedSections,
-      imageUrl: finalImageUrl,
+      imageUrl,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
     const created = await blogService.createBlog(payload);
     res.status(201).json(created);
-
   } catch (error) {
     next(error);
   }

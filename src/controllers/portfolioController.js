@@ -162,7 +162,7 @@ async function updatePortfolioById(req, res, next) {
     if (introduction) updateObj.introduction = introduction;
 
     if (mainChallenge)
-      updateObj.mainChallenge = validateMainChallenge(mainChallenge); 
+      updateObj.mainChallenge = validateMainChallenge(mainChallenge); // 
 
     if (challenges)
       updateObj.challenges = validateChallenges(challenges);
