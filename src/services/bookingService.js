@@ -21,12 +21,11 @@ async function getBookingById(id) {
 
 async function updateBookingById(id, updatePayload) {
   const db = getDB();
-  const result = await db.collection(COLLECTION).findOneAndUpdate(
+  return db.collection(COLLECTION).findOneAndUpdate(
     { _id: new ObjectId(id) },
     { $set: updatePayload },
-    { returnDocument: 'after' }
+    { returnDocument: 'after', includeResultMetadata: false }
   );
-  return result.value;
 }
 
 async function deleteBookingById(id) {

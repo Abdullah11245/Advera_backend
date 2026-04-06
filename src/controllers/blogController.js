@@ -19,6 +19,40 @@ function normalizeSections(sections) {
   }));
 }
 
+async function uploadToCloudinary(fileBuffer) {
+  return new Promise((resolve, reject) => {
+    const cloudinary = getCloudinary();
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder: 'blogs' },
+      (error, result) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        resolve(result.secure_url);
+      }
+    );
+
+    uploadStream.end(fileBuffer);
+  });
+}
+
+function normalizeTags(tags) {
+  if (!tags) return [];
+
+  try {
+    const parsed = typeof tags === 'string' ? JSON.parse(tags) : tags;
+    if (Array.isArray(parsed)) {
+      return parsed.filter((item) => item && item.trim());
+    }
+
+    return typeof parsed === 'string' && parsed.trim() ? [parsed] : [];
+  } catch (error) {
+    return typeof tags === 'string' && tags.trim() ? [tags] : [];
+  }
+}
+
 // Upload file buffer to Cloudinary
 // Dedicated route for uploading image only
 async function uploadImage(req, res, next) {
@@ -52,38 +86,26 @@ async function uploadImage(req, res, next) {
 
 // Create new blog
 async function createBlog(req, res, next) {
-  console.log('Received createBlog request with body:', req.body);
   try {
     const { title, author, datePosted, readTime, subheading, paragraph } = req.body;
-   let tags = [];
+    const tags = normalizeTags(req.body.tags);
+    let sections = [];
 
-if (req.body.tags) {
-  try {
-    tags = typeof req.body.tags === 'string'
-      ? JSON.parse(req.body.tags)
-      : req.body.tags;
-  } catch (err) {
-    // fallback if it's a plain string like "Tag 1"
-    tags = [req.body.tags];
-  }
-}
-  let sections = [];
-
-if (req.body.sections) {
-  try {
-    sections = typeof req.body.sections === 'string'
-      ? JSON.parse(req.body.sections)
-      : req.body.sections;
-  } catch (err) {
-    sections = [];
-  }
-}
+    if (req.body.sections) {
+      try {
+        sections = typeof req.body.sections === 'string'
+          ? JSON.parse(req.body.sections)
+          : req.body.sections;
+      } catch (err) {
+        sections = [];
+      }
+    }
 
     if (!title || !author || !datePosted || !readTime || !subheading || !paragraph) {
       return res.status(400).json({ error: 'title, author, datePosted, readTime, subheading, paragraph are required' });
     }
 
-    const normalizedTags = Array.isArray(tags) ? tags.filter(t => t && t.trim()) : [];
+    const normalizedTags = tags;
     const normalizedSections = normalizeSections(sections);
 
     let imageUrl = req.body.imageUrl || '';
@@ -121,17 +143,27 @@ async function updateBlogById(req, res, next) {
     const { id } = req.params;
     if (!ObjectId.isValid(id)) return res.status(400).json({ error: 'Invalid blog id' });
 
-    const { title, author, datePosted, readTime, tags, subheading, paragraph, sections } = req.body;
+    const { title, author, datePosted, readTime, subheading, paragraph } = req.body;
 
     const updateObj = { updatedAt: new Date() };
     if (title) updateObj.title = title;
     if (author) updateObj.author = author;
     if (datePosted) updateObj.datePosted = new Date(datePosted);
     if (readTime) updateObj.readTime = readTime;
-    if (Array.isArray(tags)) updateObj.tags = tags.filter(t => t && t.trim());
+    if (typeof req.body.tags !== 'undefined') updateObj.tags = normalizeTags(req.body.tags);
     if (subheading) updateObj.subheading = subheading;
     if (paragraph) updateObj.paragraph = paragraph;
-    if (sections) updateObj.sections = normalizeSections(sections);
+    if (typeof req.body.sections !== 'undefined') {
+      const parsedSections =
+        typeof req.body.sections === 'string'
+          ? JSON.parse(req.body.sections)
+          : req.body.sections;
+      updateObj.sections = normalizeSections(parsedSections);
+    }
+
+    if (typeof req.body.imageUrl !== 'undefined') {
+      updateObj.imageUrl = req.body.imageUrl;
+    }
 
     if (req.file) {
       updateObj.imageUrl = await uploadToCloudinary(req.file.buffer);

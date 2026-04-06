@@ -1,3 +1,4 @@
+const { ObjectId } = require('mongodb');
 const bookingService = require('../services/bookingService');
 
 async function createBooking(req, res, next) {
@@ -37,6 +38,9 @@ async function getAllBookings(req, res, next) {
 async function getBookingById(req, res, next) {
   try {
     const { id } = req.params;
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'Invalid booking id' });
+    }
     const booking = await bookingService.getBookingById(id);
     
     if (!booking) {
@@ -52,6 +56,9 @@ async function getBookingById(req, res, next) {
 async function updateBookingById(req, res, next) {
   try {
     const { id } = req.params;
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'Invalid booking id' });
+    }
     const { name, email, phone, preferredDate, preferredTime, message } = req.body;
 
     const updatePayload = {};
@@ -77,6 +84,9 @@ async function updateBookingById(req, res, next) {
 async function deleteBookingById(req, res, next) {
   try {
     const { id } = req.params;
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'Invalid booking id' });
+    }
     const result = await bookingService.deleteBookingById(id);
     
     if (!result) {

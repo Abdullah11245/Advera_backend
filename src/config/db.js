@@ -1,20 +1,34 @@
 const { MongoClient } = require('mongodb');
+const mongoose = require('mongoose');
 
-const uri = "mongodb+srv://abdullah543711326_db_user:Hb0tmayjwgUib2y5@adveracluser.wbvwckm.mongodb.net/?appName=AdveraCluser" ;
-const dbName = "Advera";
+const uri = process.env.MONGODB_URI;
+const dbName = process.env.MONGODB_DB || 'Advera';
 
 let client;
 let db;
+let mongooseConnectionPromise;
 
 async function connectDB() {
   if (db) return db;
+  if (!uri) {
+    throw new Error('MONGODB_URI is not defined');
+  }
 
-  client = new MongoClient(uri); // ✅ removed old options
+  client = new MongoClient(uri);
 
   await client.connect();
   db = client.db(dbName);
 
-  console.log('Connected to MongoDB:', uri, 'DB:', dbName);
+  if (mongoose.connection.readyState === 0) {
+    mongooseConnectionPromise =
+      mongooseConnectionPromise ||
+      mongoose.connect(uri, {
+        dbName,
+      });
+    await mongooseConnectionPromise;
+  }
+
+  console.log('Connected to MongoDB DB:', dbName);
   return db;
 }
 

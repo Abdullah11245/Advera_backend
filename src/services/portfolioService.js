@@ -20,12 +20,11 @@ async function getPortfolioById(id, ObjectId) {
 
 async function updatePortfolioById(id, updateObj, ObjectId) {
   const db = getDB();
-  const result = await db.collection(COLLECTION).findOneAndUpdate(
+  return db.collection(COLLECTION).findOneAndUpdate(
     { _id: new ObjectId(id) },
     { $set: updateObj },
-    { returnDocument: 'after' }
+    { returnDocument: 'after', includeResultMetadata: false }
   );
-  return result.value;
 }
 
 async function deletePortfolioById(id, ObjectId) {
