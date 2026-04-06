@@ -55,8 +55,29 @@ async function createBlog(req, res, next) {
   console.log('Received createBlog request with body:', req.body);
   try {
     const { title, author, datePosted, readTime, subheading, paragraph } = req.body;
-    const tags = req.body.tags ? JSON.parse(req.body.tags) : [];
-    const sections = req.body.sections ? JSON.parse(req.body.sections) : [];
+   let tags = [];
+
+if (req.body.tags) {
+  try {
+    tags = typeof req.body.tags === 'string'
+      ? JSON.parse(req.body.tags)
+      : req.body.tags;
+  } catch (err) {
+    // fallback if it's a plain string like "Tag 1"
+    tags = [req.body.tags];
+  }
+}
+  let sections = [];
+
+if (req.body.sections) {
+  try {
+    sections = typeof req.body.sections === 'string'
+      ? JSON.parse(req.body.sections)
+      : req.body.sections;
+  } catch (err) {
+    sections = [];
+  }
+}
 
     if (!title || !author || !datePosted || !readTime || !subheading || !paragraph) {
       return res.status(400).json({ error: 'title, author, datePosted, readTime, subheading, paragraph are required' });
@@ -65,10 +86,12 @@ async function createBlog(req, res, next) {
     const normalizedTags = Array.isArray(tags) ? tags.filter(t => t && t.trim()) : [];
     const normalizedSections = normalizeSections(sections);
 
-    let imageUrl = '';
-    if (req.file) {
-      imageUrl = await uploadToCloudinary(req.file.buffer);
-    }
+    let imageUrl = req.body.imageUrl || '';
+
+if (req.file && !imageUrl) {
+ 
+  imageUrl = await uploadToCloudinary(req.file.buffer);
+}
 
     const payload = {
       title,
