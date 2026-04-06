@@ -34,4 +34,59 @@ async function getAllBookings(req, res, next) {
   }
 }
 
-module.exports = { createBooking, getAllBookings };
+async function getBookingById(req, res, next) {
+  try {
+    const { id } = req.params;
+    const booking = await bookingService.getBookingById(id);
+    
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+    
+    res.json(booking);
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function updateBookingById(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { name, email, phone, preferredDate, preferredTime, message } = req.body;
+
+    const updatePayload = {};
+    if (name !== undefined) updatePayload.name = name;
+    if (email !== undefined) updatePayload.email = email;
+    if (phone !== undefined) updatePayload.phone = phone;
+    if (preferredDate !== undefined) updatePayload.preferredDate = new Date(preferredDate);
+    if (preferredTime !== undefined) updatePayload.preferredTime = preferredTime;
+    if (message !== undefined) updatePayload.message = message;
+
+    const updated = await bookingService.updateBookingById(id, updatePayload);
+    
+    if (!updated) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+    
+    res.json(updated);
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function deleteBookingById(req, res, next) {
+  try {
+    const { id } = req.params;
+    const result = await bookingService.deleteBookingById(id);
+    
+    if (!result) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+    
+    res.json({ message: 'Booking deleted successfully', id });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { createBooking, getAllBookings, getBookingById, updateBookingById, deleteBookingById };
