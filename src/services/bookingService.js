@@ -28,10 +28,19 @@ async function updateBookingById(id, updatePayload) {
   );
 }
 
+async function markOpenedIfPending(id) {
+  const db = getDB();
+  return db.collection(COLLECTION).findOneAndUpdate(
+    { _id: new ObjectId(id), status: 'pending' },
+    { $set: { status: 'opened', openedAt: new Date() } },
+    { returnDocument: 'after', includeResultMetadata: false }
+  );
+}
+
 async function deleteBookingById(id) {
   const db = getDB();
   const result = await db.collection(COLLECTION).deleteOne({ _id: new ObjectId(id) });
   return result.deletedCount > 0;
 }
 
-module.exports = { createBooking, getAllBookings, getBookingById, updateBookingById, deleteBookingById };
+module.exports = { createBooking, getAllBookings, getBookingById, updateBookingById, deleteBookingById, markOpenedIfPending };
